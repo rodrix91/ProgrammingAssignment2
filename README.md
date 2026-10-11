@@ -1,3 +1,5 @@
+> Preserved coursework fork from the Johns Hopkins R Programming assignment. The assignment text below is unchanged. Current work is in [csv-quality-report](https://github.com/rodrix91/csv-quality-report) and [ops-field-brief](https://github.com/rodrix91/ops-field-brief).
+
 ### Introduction
 
 This second programming assignment will require you to write an R
