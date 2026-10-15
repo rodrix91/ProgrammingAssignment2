@@ -1,4 +1,4 @@
-> Preserved coursework fork from the Johns Hopkins R Programming assignment. The assignment text below is unchanged. Current work is in [csv-quality-report](https://github.com/rodrix91/csv-quality-report) and [ops-field-brief](https://github.com/rodrix91/ops-field-brief).
+> Preserved coursework fork from the Johns Hopkins R Programming assignment. The assignment text below is unchanged. Current work is in [csv-quality-report](https://github.com/rodrix91/csv-quality-report), [ops-field-brief](https://github.com/rodrix91/ops-field-brief), and [inventory-policy-lab](https://github.com/rodrix91/inventory-policy-lab).
 
 ### Introduction
 
