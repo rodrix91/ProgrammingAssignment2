@@ -1,5 +1,19 @@
 > Preserved coursework fork from the Johns Hopkins R Programming assignment. The assignment text below is unchanged. Current work is in [csv-quality-report](https://github.com/rodrix91/csv-quality-report) and [ops-field-brief](https://github.com/rodrix91/ops-field-brief).
 
+## Verified solution in this fork
+
+The original Johns Hopkins / Coursera assignment text below is preserved for historical context. This fork now includes a completed **base-R implementation** of `makeCacheMatrix()` and `cacheSolve()` in [`cachematrix.R`](cachematrix.R). It uses lexical scoping (`<<-`) to cache an inverse, returns the stored value on subsequent requests, and invalidates the cache when the source matrix changes.
+
+Run the checks from the repository root:
+
+```bash
+Rscript --vanilla tests/run_tests.R
+```
+
+The [regression tests](tests/run_tests.R) check the accessor contract, first computation, cached reuse, invalidation, recomputation, and singular-matrix errors. They use only R's base installation, with no additional packages. [GitHub Actions](.github/workflows/r-tests.yml) runs the same tests on Linux, Windows and macOS.
+
+> **Scope:** this is an educational demonstration of closure-based caching, not a numerical-linear-algebra library. The assignment assumes a square invertible matrix; R's `solve()` raises an error for singular matrices. The source assignment instructions remain unchanged below.
+
 ### Introduction
 
 This second programming assignment will require you to write an R
