@@ -10,7 +10,7 @@ Run the checks from the repository root:
 Rscript --vanilla tests/run_tests.R
 ```
 
-The [regression tests](tests/run_tests.R) check the accessor contract, first computation, cached reuse, invalidation, recomputation, and singular-matrix errors. They use only R's base installation, with no additional packages. [GitHub Actions](.github/workflows/r-tests.yml) runs the same tests on Linux, Windows and macOS.
+The [regression tests](tests/run_tests.R) check the accessor contract, first computation, cached reuse, invalidation, recomputation, singular-matrix errors, independent closure state, 1×1 and non-symmetric 3×3 matrices, and forwarding of the numerical tolerance to `solve()`. They use only R's base installation, with no additional packages. [GitHub Actions](.github/workflows/r-tests.yml) runs the same tests on Linux, Windows and macOS.
 
 > **Scope:** this is an educational demonstration of closure-based caching, not a numerical-linear-algebra library. The assignment assumes a square invertible matrix; R's `solve()` raises an error for singular matrices. The source assignment instructions remain unchanged below.
 
