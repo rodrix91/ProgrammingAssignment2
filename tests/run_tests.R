@@ -54,4 +54,44 @@ failed <- makeCacheMatrix(singular)
 error <- tryCatch(cacheSolve(failed), error = function(e) e)
 stopifnot(inherits(error, "error"), is.null(failed$getInverse()))
 
+# Distinct closures must never share cached values or invalidation state.
+left <- makeCacheMatrix(diag(c(2, 3)))
+right <- makeCacheMatrix(diag(c(5, 7)))
+left_inverse <- cacheSolve(left)
+right_inverse <- cacheSolve(right)
+assert_equal_matrix(left_inverse, solve(left$get()))
+assert_equal_matrix(right_inverse, solve(right$get()))
+left$set(matrix(c(6, 1, 2, 5), nrow = 2))
+stopifnot(is.null(left$getInverse()))
+assert_equal_matrix(right$getInverse(), right_inverse)
+assert_equal_matrix(suppressMessages(cacheSolve(right)), right_inverse)
+assert_equal_matrix(cacheSolve(left), solve(left$get()))
+stopifnot(!isTRUE(all.equal(left$getInverse(), right$getInverse())))
+
+# The assignment's closure works with square matrices of varying dimensions,
+# including a 1x1 matrix and a non-symmetric 3x3 matrix.
+single <- makeCacheMatrix(matrix(8, nrow = 1))
+assert_equal_matrix(cacheSolve(single), matrix(1 / 8, nrow = 1))
+assert_equal_matrix(suppressMessages(cacheSolve(single)), single$getInverse())
+
+third_matrix <- matrix(c(3, 0, 0, 1, 4, 0, 2, 1, 5), nrow = 3)
+third_cache <- makeCacheMatrix(third_matrix)
+third_inverse <- cacheSolve(third_cache)
+assert_equal_matrix(third_inverse, solve(third_matrix))
+stopifnot(
+        identical(dim(third_inverse), c(3L, 3L)),
+        isTRUE(all.equal(third_matrix %*% third_inverse, diag(3), tolerance = 1e-12))
+)
+
+# cacheSolve must forward solve() arguments on cache misses. A deliberately
+# strict tolerance rejects an ill-conditioned but invertible diagonal matrix.
+# Failed numerical checks must leave the cached value unset.
+ill_conditioned <- diag(c(1, 1000))
+tolerance_cache <- makeCacheMatrix(ill_conditioned)
+strict_error <- tryCatch(cacheSolve(tolerance_cache, tol = 0.5), error = function(e) e)
+stopifnot(inherits(strict_error, "error"), is.null(tolerance_cache$getInverse()))
+assert_equal_matrix(cacheSolve(tolerance_cache, tol = 0), solve(ill_conditioned, tol = 0))
+assert_equal_matrix(suppressMessages(cacheSolve(tolerance_cache)), tolerance_cache$getInverse())
+
 cat("PASS: matrix inverse caching, reuse, invalidation, accessors, and errors\n")
+cat("PASS: independent closures, matrix dimensions, and forwarded solve tolerance\n")
