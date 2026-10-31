@@ -93,5 +93,32 @@ stopifnot(inherits(strict_error, "error"), is.null(tolerance_cache$getInverse())
 assert_equal_matrix(cacheSolve(tolerance_cache, tol = 0), solve(ill_conditioned, tol = 0))
 assert_equal_matrix(suppressMessages(cacheSolve(tolerance_cache)), tolerance_cache$getInverse())
 
+# A valid cached inverse must not survive a transition to a singular matrix.
+# A failed recomputation must leave the same closure reusable once data recover.
+recovering <- makeCacheMatrix(diag(c(2, 3)))
+before_failure <- cacheSolve(recovering)
+assert_equal_matrix(before_failure, diag(c(0.5, 1 / 3)))
+recovering$set(singular)
+stopifnot(is.null(recovering$getInverse()))
+singular_after_cached <- tryCatch(cacheSolve(recovering), error = function(e) e)
+stopifnot(inherits(singular_after_cached, "error"), is.null(recovering$getInverse()))
+recovered_matrix <- matrix(c(5, 2, 1, 3), nrow = 2)
+recovering$set(recovered_matrix)
+recovered_inverse <- cacheSolve(recovering)
+assert_equal_matrix(recovered_inverse, solve(recovered_matrix))
+stopifnot(!isTRUE(all.equal(before_failure, recovered_inverse)))
+assert_equal_matrix(suppressMessages(cacheSolve(recovering)), recovered_inverse)
+
+# R uses copy-on-modify for matrices: mutating the caller's original variable
+# after the closure forced its argument must not change its stored matrix.
+source_matrix <- diag(c(3, 4))
+snapshot <- makeCacheMatrix(source_matrix)
+snapshot_inverse <- cacheSolve(snapshot)
+source_matrix[1, 1] <- 99
+assert_equal_matrix(snapshot$get(), diag(c(3, 4)))
+assert_equal_matrix(suppressMessages(cacheSolve(snapshot)), snapshot_inverse)
+
+cat("PASS: singular transition, failed inverse recovery, and caller-side mutation\\n")
+
 cat("PASS: matrix inverse caching, reuse, invalidation, accessors, and errors\n")
 cat("PASS: independent closures, matrix dimensions, and forwarded solve tolerance\n")
