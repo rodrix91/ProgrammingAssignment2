@@ -109,6 +109,22 @@ assert_equal_matrix(recovered_inverse, solve(recovered_matrix))
 stopifnot(!isTRUE(all.equal(before_failure, recovered_inverse)))
 assert_equal_matrix(suppressMessages(cacheSolve(recovering)), recovered_inverse)
 
+# R arguments are lazy: the closure must capture the initial matrix even
+# when the caller changes its variable before the first get() or cacheSolve().
+source_before_first_read <- diag(c(3, 4))
+unread_cache <- makeCacheMatrix(source_before_first_read)
+source_before_first_read[1, 1] <- 99
+assert_equal_matrix(unread_cache$get(), diag(c(3, 4)))
+assert_equal_matrix(cacheSolve(unread_cache), diag(c(1 / 3, 1 / 4)))
+assert_equal_matrix(suppressMessages(cacheSolve(unread_cache)), unread_cache$getInverse())
+
+# Rebinding the caller's variable must also leave the original matrix intact.
+source_before_reassignment <- diag(c(5, 6))
+unread_reassigned <- makeCacheMatrix(source_before_reassignment)
+source_before_reassignment <- diag(c(10, 12))
+assert_equal_matrix(unread_reassigned$get(), diag(c(5, 6)))
+assert_equal_matrix(cacheSolve(unread_reassigned), diag(c(1 / 5, 1 / 6)))
+
 # R uses copy-on-modify for matrices: mutating the caller's original variable
 # after the closure forced its argument must not change its stored matrix.
 source_matrix <- diag(c(3, 4))
