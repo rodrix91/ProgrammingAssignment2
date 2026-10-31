@@ -3,6 +3,9 @@
 
 ## Return a matrix-like object with accessors for the matrix and its cached inverse.
 makeCacheMatrix <- function(x = matrix()) {
+        ## Evaluate the caller's matrix now, before its variable can change.
+        ## Otherwise R's lazy promise can resolve only on the first get().
+        force(x)
         inverse <- NULL
 
         set <- function(y) {
