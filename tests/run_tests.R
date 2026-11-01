@@ -93,6 +93,51 @@ stopifnot(inherits(strict_error, "error"), is.null(tolerance_cache$getInverse())
 assert_equal_matrix(cacheSolve(tolerance_cache, tol = 0), solve(ill_conditioned, tol = 0))
 assert_equal_matrix(suppressMessages(cacheSolve(tolerance_cache)), tolerance_cache$getInverse())
 
+# Cache hits are only valid when solve() is called with the SAME options.
+# A lenient tolerance must never bypass a later, stricter matrix check.
+option_cache <- makeCacheMatrix(ill_conditioned)
+lenient_inverse <- cacheSolve(option_cache, tol = 0)
+assert_equal_matrix(lenient_inverse, solve(ill_conditioned, tol = 0))
+messages <- character()
+cached_lenient <- withCallingHandlers(
+        cacheSolve(option_cache, tol = 0),
+        message = function(m) {
+                messages <<- c(messages, conditionMessage(m))
+                invokeRestart("muffleMessage")
+        }
+)
+assert_equal_matrix(cached_lenient, lenient_inverse)
+stopifnot(length(messages) == 1L, grepl("getting cached data", messages[[1]]))
+strict_after_lenient <- tryCatch(
+        cacheSolve(option_cache, tol = 0.5),
+        error = function(e) e
+)
+stopifnot(inherits(strict_after_lenient, "error"))
+# A failed stricter solve leaves the successful lenient cached entry intact
+# without ever returning it to callers using the stricter option.
+assert_equal_matrix(option_cache$getInverse(), lenient_inverse)
+assert_equal_matrix(suppressMessages(cacheSolve(option_cache, tol = 0)), lenient_inverse)
+
+# solve() also accepts a right-hand-side vector via b=..., yielding a
+# different type of result. Switching b or omitting it must never reuse
+# the cached result for a different problem.
+rhs_cache <- makeCacheMatrix(first)
+rhs_one <- cacheSolve(rhs_cache, b = c(3, 5))
+stopifnot(isTRUE(all.equal(rhs_one, solve(first, b = c(3, 5)))))
+rhs_two <- cacheSolve(rhs_cache, b = c(7, 11))
+stopifnot(isTRUE(all.equal(rhs_two, solve(first, b = c(7, 11)))))
+stopifnot(!isTRUE(all.equal(rhs_one, rhs_two)))
+rhs_inverse <- cacheSolve(rhs_cache)
+assert_equal_matrix(rhs_inverse, solve(first))
+assert_equal_matrix(rhs_cache$getInverse(), rhs_inverse)
+
+# An explicit manual cache entry retains the original no-options behavior.
+stopifnot(identical(sort(names(singular_cache)),
+                    sort(c("set", "get", "setInverse", "getInverse"))))
+assert_equal_matrix(suppressMessages(cacheSolve(singular_cache)), sentinel)
+strict_manual <- tryCatch(cacheSolve(singular_cache, tol = 0.5), error = function(e) e)
+stopifnot(inherits(strict_manual, "error"))
+
 # A valid cached inverse must not survive a transition to a singular matrix.
 # A failed recomputation must leave the same closure reusable once data recover.
 recovering <- makeCacheMatrix(diag(c(2, 3)))
