@@ -2,7 +2,7 @@
 
 ## Verified solution in this fork
 
-The original Johns Hopkins / Coursera assignment text below is preserved for historical context. This fork now includes a completed **base-R implementation** of `makeCacheMatrix()` and `cacheSolve()` in [`cachematrix.R`](cachematrix.R). It uses lexical scoping (`<<-`) to cache an inverse, returns the stored value on subsequent requests, and invalidates the cache when the source matrix changes.
+The original Johns Hopkins / Coursera assignment text below is preserved for historical context. This fork now includes a completed **base-R implementation** of `makeCacheMatrix()` and `cacheSolve()` in [`cachematrix.R`](cachematrix.R). It uses lexical scoping (`<<-`) to cache an inverse, returns the stored value on subsequent requests with the same `solve()` arguments, and invalidates the cache when the source matrix changes. Different numeric tolerances or right-hand-side arguments are recalculated rather than reusing a potentially incorrect result; the original four accessors remain available.
 
 Run the checks from the repository root:
 
@@ -10,7 +10,7 @@ Run the checks from the repository root:
 Rscript --vanilla tests/run_tests.R
 ```
 
-The [regression tests](tests/run_tests.R) check the accessor contract, first computation, cached reuse, invalidation, recomputation, singular-matrix errors, independent closure state, 1×1 and non-symmetric 3×3 matrices, and forwarding of the numerical tolerance to `solve()`. They also verify that an invertible matrix can become singular without leaving a stale cached inverse, recover after a failed solve, and remain unaffected when the caller mutates its own matrix variable. They use only R's base installation, with no additional packages. [GitHub Actions](.github/workflows/r-tests.yml) runs the same tests on Linux, Windows and macOS.
+The [regression tests](tests/run_tests.R) check the accessor contract, first computation, cached reuse, invalidation, recomputation, singular-matrix errors, independent closure state, 1×1 and non-symmetric 3×3 matrices, and forwarding of the numerical tolerance to `solve()`. Additional tests confirm that identical numerical options reuse the cache, stricter tolerances cannot reuse an unchecked inverse, and different `b` vectors produce independent solutions. They also verify that an invertible matrix can become singular without leaving a stale cached inverse, recover after a failed solve, and remain unaffected when the caller mutates its own matrix variable. They use only R's base installation, with no additional packages. [GitHub Actions](.github/workflows/r-tests.yml) runs the same tests on Linux, Windows and macOS.
 
 > **Scope:** this is an educational demonstration of closure-based caching, not a numerical-linear-algebra library. The assignment assumes a square invertible matrix; R's `solve()` raises an error for singular matrices. The source assignment instructions remain unchanged below.
 
