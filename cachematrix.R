@@ -7,16 +7,28 @@ makeCacheMatrix <- function(x = matrix()) {
         ## Otherwise R's lazy promise can resolve only on the first get().
         force(x)
         inverse <- NULL
+        inverseArgs <- list()
 
         set <- function(y) {
                 x <<- y
                 inverse <<- NULL
+                inverseArgs <<- list()
         }
         get <- function() x
-        setInverse <- function(value) {
+        ## Keep the original four accessors. An optional argument lets
+        ## cacheSolve check whether the stored inverse used the same solve()
+        ## options, while getInverse() without arguments still returns the
+        ## ordinary cached value for assignment callers.
+        setInverse <- function(value, solveArgs = list()) {
                 inverse <<- value
+                inverseArgs <<- solveArgs
         }
-        getInverse <- function() inverse
+        getInverse <- function(solveArgs) {
+                if (missing(solveArgs) || identical(solveArgs, inverseArgs)) {
+                        return(inverse)
+                }
+                NULL
+        }
 
         list(
                 set = set,
@@ -29,13 +41,17 @@ makeCacheMatrix <- function(x = matrix()) {
 
 ## Return a cached inverse if available; otherwise compute and store it.
 cacheSolve <- function(x, ...) {
-        inverse <- x$getInverse()
+        solveArgs <- list(...)
+        inverse <- x$getInverse(solveArgs)
         if (!is.null(inverse)) {
                 message("getting cached data")
                 return(inverse)
         }
 
-        inverse <- solve(x$get(), ...)
-        x$setInverse(inverse)
+        ## A changed tolerance or other solve() option must be checked by
+        ## solve() rather than silently returning a previous calculation.
+        ## Store the options only after solve() has succeeded.
+        inverse <- do.call(solve, c(list(x$get()), solveArgs))
+        x$setInverse(inverse, solveArgs)
         inverse
 }
