@@ -2,7 +2,7 @@
 
 ## Verified solution in this fork
 
-The original Johns Hopkins / Coursera assignment text below is preserved for historical context. This fork now includes a completed **base-R implementation** of `makeCacheMatrix()` and `cacheSolve()` in [`cachematrix.R`](cachematrix.R). It uses lexical scoping (`<<-`) to cache an inverse, returns the stored value on subsequent requests with the same `solve()` arguments, and invalidates the cache when the source matrix changes. Different numeric tolerances or right-hand-side arguments are recalculated rather than reusing a potentially incorrect result; the original four accessors remain available.
+The original Johns Hopkins / Coursera assignment text below is preserved for historical context. This fork now includes a completed **base-R implementation** of `makeCacheMatrix()` and `cacheSolve()` in [`cachematrix.R`](cachematrix.R). It uses lexical scoping (`<<-`) to cache an inverse, returns the stored value on subsequent requests with the same `solve()` arguments, and invalidates the cache when the source matrix changes. Different numeric tolerances or right-hand-side arguments are recalculated rather than reusing a potentially incorrect result; the original four accessors remain available. In particular, `getInverse()` without arguments returns only a genuine matrix inverse, never a cached solution to `solve(A, b)`. Exact right-hand-side calls still reuse their own cached solutions.
 
 Run the checks from the repository root:
 

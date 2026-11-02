@@ -24,9 +24,21 @@ makeCacheMatrix <- function(x = matrix()) {
                 inverseArgs <<- solveArgs
         }
         getInverse <- function(solveArgs) {
-                if (missing(solveArgs) || identical(solveArgs, inverseArgs)) {
+                if (missing(solveArgs)) {
+                        ## The original no-argument accessor is for inverses,
+                        ## not solutions of solve(A, b). A named b or an
+                        ## unnamed positional argument supplies a right-hand
+                        ## side, even when that right-hand side is a matrix.
+                        options <- names(inverseArgs)
+                        hasRhs <- length(inverseArgs) > 0L &&
+                                (is.null(options) ||
+                                 any(is.na(options) | options == "" | options == "b"))
+                        if (hasRhs) return(NULL)
                         return(inverse)
                 }
+                ## cacheSolve still reuses solutions with identical solve()
+                ## arguments, including a matching explicit right-hand side.
+                if (identical(solveArgs, inverseArgs)) return(inverse)
                 NULL
         }
 

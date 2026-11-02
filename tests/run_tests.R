@@ -124,12 +124,34 @@ assert_equal_matrix(suppressMessages(cacheSolve(option_cache, tol = 0)), lenient
 rhs_cache <- makeCacheMatrix(first)
 rhs_one <- cacheSolve(rhs_cache, b = c(3, 5))
 stopifnot(isTRUE(all.equal(rhs_one, solve(first, b = c(3, 5)))))
+# A solution vector is not the inverse matrix exposed by getInverse().
+stopifnot(is.null(rhs_cache$getInverse()))
+rhs_messages <- character()
+cached_rhs <- withCallingHandlers(
+        cacheSolve(rhs_cache, b = c(3, 5)),
+        message = function(m) {
+                rhs_messages <<- c(rhs_messages, conditionMessage(m))
+                invokeRestart("muffleMessage")
+        }
+)
+stopifnot(isTRUE(all.equal(cached_rhs, rhs_one)))
+stopifnot(length(rhs_messages) == 1L, grepl("getting cached data", rhs_messages[[1]]))
 rhs_two <- cacheSolve(rhs_cache, b = c(7, 11))
 stopifnot(isTRUE(all.equal(rhs_two, solve(first, b = c(7, 11)))))
-stopifnot(!isTRUE(all.equal(rhs_one, rhs_two)))
-rhs_inverse <- cacheSolve(rhs_cache)
-assert_equal_matrix(rhs_inverse, solve(first))
+stopifnot(!isTRUE(all.equal(rhs_one, rhs_two)), is.null(rhs_cache$getInverse()))
+
+# Positional RHS vectors and matrix right-hand sides are solutions too.
+positional_rhs <- cacheSolve(rhs_cache, c(3, 5))
+stopifnot(isTRUE(all.equal(positional_rhs, rhs_one)), is.null(rhs_cache$getInverse()))
+matrix_rhs <- 2 * diag(2)
+assert_equal_matrix(cacheSolve(rhs_cache, b = matrix_rhs), solve(first, b = matrix_rhs))
+stopifnot(is.null(rhs_cache$getInverse()))
+
+# Named tolerance settings still compute genuine inverses.
+rhs_inverse <- cacheSolve(rhs_cache, tol = 0)
+assert_equal_matrix(rhs_inverse, solve(first, tol = 0))
 assert_equal_matrix(rhs_cache$getInverse(), rhs_inverse)
+assert_equal_matrix(suppressMessages(cacheSolve(rhs_cache, tol = 0)), rhs_inverse)
 
 # An explicit manual cache entry retains the original no-options behavior.
 stopifnot(identical(sort(names(singular_cache)),
