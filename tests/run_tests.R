@@ -201,6 +201,58 @@ source_matrix[1, 1] <- 99
 assert_equal_matrix(snapshot$get(), diag(c(3, 4)))
 assert_equal_matrix(suppressMessages(cacheSolve(snapshot)), snapshot_inverse)
 
+# Setter arguments also need eager evaluation: otherwise the stored value
+# can follow a later caller-side reassignment before its first read.
+replacement <- diag(c(2, 5))
+setter_cache <- makeCacheMatrix(diag(2))
+setter_cache$set(replacement)
+replacement <- diag(c(11, 13))
+assert_equal_matrix(setter_cache$get(), diag(c(2, 5)))
+assert_equal_matrix(cacheSolve(setter_cache), diag(c(1 / 2, 1 / 5)))
+
+# Mutation of the caller's original matrix after set() must likewise be safe.
+replacement <- diag(c(3, 7))
+setter_cache$set(replacement)
+replacement[1, 1] <- 99
+assert_equal_matrix(setter_cache$get(), diag(c(3, 7)))
+assert_equal_matrix(cacheSolve(setter_cache), diag(c(1 / 3, 1 / 7)))
+
+# The public manual-cache setter must freeze values as well as the matrix.
+manual <- makeCacheMatrix(diag(c(2, 3)))
+supplied_inverse <- diag(c(1 / 2, 1 / 3))
+manual$setInverse(supplied_inverse)
+supplied_inverse <- diag(c(9, 9))
+assert_equal_matrix(manual$getInverse(), diag(c(1 / 2, 1 / 3)))
+assert_equal_matrix(suppressMessages(cacheSolve(manual)), diag(c(1 / 2, 1 / 3)))
+
+supplied_inverse <- diag(c(1 / 4, 1 / 5))
+manual$setInverse(supplied_inverse)
+supplied_inverse[1, 1] <- 999
+assert_equal_matrix(manual$getInverse(), diag(c(1 / 4, 1 / 5)))
+
+# Manual options also must be frozen, so cache hits match the original solve call.
+manual_args <- list(tol = 0)
+manual$setInverse(diag(c(1 / 4, 1 / 5)), manual_args)
+manual_args$tol <- 0.5
+assert_equal_matrix(manual$getInverse(list(tol = 0)), diag(c(1 / 4, 1 / 5)))
+stopifnot(is.null(manual$getInverse(list(tol = 0.5))))
+
+# A failed evaluation of manual solve options must not partially overwrite
+# the previously valid inverse while leaving the old options in place.
+atomic <- makeCacheMatrix(diag(c(2, 3)))
+known_inverse <- diag(c(1 / 2, 1 / 3))
+atomic$setInverse(known_inverse, list(tol = 0))
+bad_manual <- tryCatch(
+        atomic$setInverse(diag(c(9, 9)), stop("bad manual options")),
+        error = function(e) e
+)
+stopifnot(inherits(bad_manual, "error"),
+          grepl("bad manual options", conditionMessage(bad_manual)))
+assert_equal_matrix(atomic$getInverse(list(tol = 0)), known_inverse)
+stopifnot(is.null(atomic$getInverse(list(tol = 0.5))))
+
+cat("PASS: eager setter snapshots preserve matrix, inverse, and options\\n")
+
 cat("PASS: singular transition, failed inverse recovery, and caller-side mutation\\n")
 
 cat("PASS: matrix inverse caching, reuse, invalidation, accessors, and errors\n")
