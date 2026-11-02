@@ -10,6 +10,8 @@ makeCacheMatrix <- function(x = matrix()) {
         inverseArgs <- list()
 
         set <- function(y) {
+                ## Freeze R's lazy argument before the caller can change it.
+                force(y)
                 x <<- y
                 inverse <<- NULL
                 inverseArgs <<- list()
@@ -20,6 +22,9 @@ makeCacheMatrix <- function(x = matrix()) {
         ## options, while getInverse() without arguments still returns the
         ## ordinary cached value for assignment callers.
         setInverse <- function(value, solveArgs = list()) {
+                ## Manual cache writes must capture their values immediately too.
+                force(value)
+                force(solveArgs)
                 inverse <<- value
                 inverseArgs <<- solveArgs
         }
