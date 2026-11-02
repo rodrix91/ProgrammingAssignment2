@@ -237,6 +237,20 @@ manual_args$tol <- 0.5
 assert_equal_matrix(manual$getInverse(list(tol = 0)), diag(c(1 / 4, 1 / 5)))
 stopifnot(is.null(manual$getInverse(list(tol = 0.5))))
 
+# A failed evaluation of manual solve options must not partially overwrite
+# the previously valid inverse while leaving the old options in place.
+atomic <- makeCacheMatrix(diag(c(2, 3)))
+known_inverse <- diag(c(1 / 2, 1 / 3))
+atomic$setInverse(known_inverse, list(tol = 0))
+bad_manual <- tryCatch(
+        atomic$setInverse(diag(c(9, 9)), stop("bad manual options")),
+        error = function(e) e
+)
+stopifnot(inherits(bad_manual, "error"),
+          grepl("bad manual options", conditionMessage(bad_manual)))
+assert_equal_matrix(atomic$getInverse(list(tol = 0)), known_inverse)
+stopifnot(is.null(atomic$getInverse(list(tol = 0.5))))
+
 cat("PASS: eager setter snapshots preserve matrix, inverse, and options\\n")
 
 cat("PASS: singular transition, failed inverse recovery, and caller-side mutation\\n")
