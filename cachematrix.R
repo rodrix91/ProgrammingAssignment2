@@ -35,12 +35,9 @@ makeCacheMatrix <- function(x = matrix()) {
                         ## unnamed positional argument supplies a right-hand
                         ## side, even when that right-hand side is a matrix.
                         options <- names(inverseArgs)
-                        if (is.null(options)) options <- rep("", length(inverseArgs))
-                        hasRhs <- any(vapply(seq_along(inverseArgs), function(i) {
-                                name <- options[[i]]
-                                (is.na(name) || name == "" || name == "b") &&
-                                        !is.null(inverseArgs[[i]])
-                        }, logical(1)))
+                        hasRhs <- length(inverseArgs) > 0L &&
+                                (is.null(options) ||
+                                 any(is.na(options) | options == "" | options == "b"))
                         if (hasRhs) return(NULL)
                         return(inverse)
                 }
