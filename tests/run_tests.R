@@ -147,20 +147,25 @@ matrix_rhs <- 2 * diag(2)
 assert_equal_matrix(cacheSolve(rhs_cache, b = matrix_rhs), solve(first, b = matrix_rhs))
 stopifnot(is.null(rhs_cache$getInverse()))
 
-# An explicit NULL right-hand side is an inverse in base R, not a
-# solution to solve(A, b) with an actual vector/matrix b.
+# Base R distinguishes a missing b from an explicit NULL b. Passing
+# b=NULL (named or positional) must fail instead of returning the
+# previously cached matrix inverse or pretending to cache a solution.
 null_rhs_cache <- makeCacheMatrix(first)
-null_rhs_inverse <- cacheSolve(null_rhs_cache, b = NULL)
+named_null_error <- tryCatch(cacheSolve(null_rhs_cache, b = NULL),
+                             error = function(e) e)
+positional_null_error <- tryCatch(cacheSolve(null_rhs_cache, NULL),
+                                  error = function(e) e)
+stopifnot(inherits(named_null_error, "error"),
+          inherits(positional_null_error, "error"),
+          is.null(null_rhs_cache$getInverse()))
+# A failed explicit-NULL solve must not invalidate a legitimate inverse.
+null_rhs_inverse <- cacheSolve(null_rhs_cache)
 assert_equal_matrix(null_rhs_inverse, solve(first))
+after_cached_null_error <- tryCatch(cacheSolve(null_rhs_cache, b = NULL),
+                                    error = function(e) e)
+stopifnot(inherits(after_cached_null_error, "error"))
 assert_equal_matrix(null_rhs_cache$getInverse(), null_rhs_inverse)
-assert_equal_matrix(suppressMessages(cacheSolve(null_rhs_cache, b = NULL)), null_rhs_inverse)
-null_positional_cache <- makeCacheMatrix(first)
-assert_equal_matrix(cacheSolve(null_positional_cache, NULL), solve(first))
-assert_equal_matrix(null_positional_cache$getInverse(), solve(first))
-# A subsequent genuine RHS result must still be hidden from getInverse().
-null_rhs_solution <- cacheSolve(null_rhs_cache, b = c(3, 5))
-stopifnot(isTRUE(all.equal(null_rhs_solution, solve(first, b = c(3, 5)))))
-stopifnot(is.null(null_rhs_cache$getInverse()))
+assert_equal_matrix(suppressMessages(cacheSolve(null_rhs_cache)), null_rhs_inverse)
 
 # Named tolerance settings still compute genuine inverses.
 rhs_inverse <- cacheSolve(rhs_cache, tol = 0)
