@@ -39,3 +39,6 @@ jobs:
 
       - name: Run independent Coursera cache regression checks (base R)
         run: Rscript --vanilla tests/cachematrix-regressions.R
+
+      - name: Verify complex matrix inverses and RHS cache isolation (base R)
+        run: Rscript --vanilla tests/complex_matrix_regressions.R
