@@ -22,7 +22,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Explicit Intel macOS runner keeps coverage when macos-latest ARM64
+        # capacity causes jobs to be cancelled before any tests execute.
+        os: [ubuntu-latest, windows-latest, macos-15-intel]
     steps:
       - name: Check out the preserved coursework
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -39,3 +41,6 @@ jobs:
 
       - name: Run independent Coursera cache regression checks (base R)
         run: Rscript --vanilla tests/cachematrix-regressions.R
+
+      - name: Verify complex matrix inverses and RHS cache isolation (base R)
+        run: Rscript --vanilla tests/complex_matrix_regressions.R
